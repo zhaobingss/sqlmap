@@ -1,0 +1,13 @@
+{{/*注释*/}}
+<sqlmap namespace="my">
+    <sql id="selectALL">
+        {{$where := false}}
+        SELECT
+        *
+        FROM sys_src
+        WHERE
+        {{if .id}} id = {{.id }} {{$where = true}} {{end}}
+        {{if eq $where false}} 1=1 {{end}}
+        LIMIT 10
+    </sql>
+</sqlmap>
