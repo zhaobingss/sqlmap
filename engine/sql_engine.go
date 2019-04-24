@@ -69,9 +69,7 @@ func (s *SqlEngine) Execute(key string, data interface{}) (int64, error) {
 
 /// 执行SELECT的sql
 func (s *SqlEngine) Query(key string, data interface{}) ([]map[string]string, error) {
-	if !s.init {
-		panic(errors.New("未初始化引擎"))
-	}
+	s.checkInit()
 	sqlStr, err := s.buildSql(key, data)
 	if err != nil {
 		return nil, err
