@@ -5,21 +5,22 @@ import "database/sql"
 const commitInitStatus = 1
 
 /// session工厂用来创建session
-type SessionFactory struct {
+type sessionFactory struct {
 	db *sql.DB // 数据库连接
 }
 
 /// 创建新的session工厂
-func NewSessionFactory(db *sql.DB) *SessionFactory {
-	s := &SessionFactory{}
+func newSessionFactory(db *sql.DB) *sessionFactory {
+	s := &sessionFactory{}
 	s.db = db
 	return s
 }
 
 /// 使用session工厂创建session
-func (s *SessionFactory) NewSession() *Session {
+func (s *sessionFactory) newSession(tplType string) *Session {
 	ss := &Session{}
 	ss.db = s.db
+	ss.tplType = tplType
 	return ss
 }
 
@@ -29,6 +30,7 @@ type Session struct {
 	tx          *sql.Tx // 事务
 	commit      int8    // 本session提交的次数
 	canRollback bool    // 标记是否可以回滚
+	tplType     string  // 模板leixing
 }
 
 /// 开始事务
@@ -85,8 +87,20 @@ func (s *Session) Commit() error {
 	return nil
 }
 
-/// 执行sql语句
-func (s *Session) Exec(sql string, args ...int) (sql.Result, error) {
+/// 非查询语句
+func (s *Session) Exec(key string, data interface{}) (sql.Result, error) {
+	if s.tx == nil {
+		return exec(key, s.tplType, data, s.db.Exec)
+	} else {
+		return exec(key, s.tplType, data, s.tx.Exec)
+	}
+}
 
-	return nil, nil
+/// 查询语句
+func (s *Session) Query(key string, data interface{}) ([]map[string]string, error) {
+	if s.tx == nil {
+		return query(key, s.tplType, data, s.db.Prepare)
+	} else {
+		return query(key, s.tplType, data, s.tx.Prepare)
+	}
 }
