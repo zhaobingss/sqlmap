@@ -11,7 +11,6 @@ import (
 func main() {
 
 	eg := engine.New()
-	//err := eg.Init("mysql", "jipiao668:!@#jipiao@(139.196.210.136:3306)/jipiao668", "sql", template.DEFAULT)
 	err := eg.Init("mysql", "root:root@(127.0.0.1:3306)/test", "sql", template.DEFAULT)
 	if err != nil {
 		panic(err)
