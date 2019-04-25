@@ -140,7 +140,7 @@ func (s *SqlEngine) parse(xml []byte) (map[string]string, error) {
 		if id == "" {
 			return ret, errors.New(namespace + " 中有sql语句未设置ID")
 		}
-		fullId := namespace + "_" + id
+		fullId := namespace + "." + id
 		if ret[fullId] == fullId {
 			return ret, errors.New(namespace + " 中 " + fullId + " 重复")
 		}

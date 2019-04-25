@@ -20,12 +20,41 @@ func main() {
 		go func() {
 			mp := map[string]interface{}{}
 			mp["id"] = 2
-			m, err := eg.Query("my_selectALL", mp)
+			m, err := eg.Query("my.selectALL", mp)
 			if err != nil {
 				panic(err)
 			}
 			fmt.Println(m)
 		}()
 	}
+
+	//ss := eg.NewSession()
+	//err = ss.BeginTx()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//mp := map[string]interface{}{}
+	//mp["name"] = "zhangsan"
+	//mp["pass"] = "123"
+	//r, err := ss.Exec("my_insert", mp)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//id, _ := r.LastInsertId()
+	//fmt.Println(id)
+	//
+	//err = ss.Commit()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//time.Sleep(time.Duration(10) * time.Second)
+	//
+	//err = ss.Rollback()
+	//if err != nil {
+	//	panic(err)
+	//}
+
+
 	time.Sleep(time.Duration(300) * time.Second)
 }

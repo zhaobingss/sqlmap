@@ -10,4 +10,13 @@
         {{if eq $where false}} 1=1 {{end}}
         LIMIT 10
     </sql>
+    <sql id="insert">
+        INSERT INTO sys_user(
+        {{if .name}} user_name, {{end}}
+        {{if .pass}} user_pass {{end}}
+        ) VALUES(
+        {{if .name}} '{{.name}}', {{end}}
+        {{if .pass}} '{{.pass}}' {{end}}
+        )
+    </sql>
 </sqlmap>
