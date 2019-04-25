@@ -1,29 +1,38 @@
 package engine
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/zhaobingss/sqlmap/builder"
-	"github.com/zhaobingss/sqlmap/parser"
+	"github.com/beevik/etree"
 	"github.com/zhaobingss/sqlmap/util"
 	"io/ioutil"
+	"regexp"
+	"strings"
+	"sync"
 )
 
+/// sql文件默认命名空间
+var DefaultNamespace = "default_namespace"
+/// 存储sql预处理语句
+var SqlMap = map[string]string{}
+/// 存储sql处理模板
+var TplMap = map[string]*Template{}
+/// 处理sql多余空格的正则
+var reg, _ = regexp.Compile("\\s+")
+
+/// sql引擎
 type SqlEngine struct {
-	db         *sql.DB
-	sqlBuilder *builder.SqlBuilder
-	xmlParser  *parser.XmlParser
-	init       bool
-	tplType    string
-	sqlMap     map[string]string
+	lock           sync.RWMutex
+	db             *sql.DB
+	init           bool
+	tplType        string
+	sessionFactory *SessionFactory
 }
 
 func New() *SqlEngine {
 	engine := &SqlEngine{}
-	engine.sqlBuilder = builder.New()
-	engine.xmlParser = parser.New()
-	engine.sqlMap = map[string]string{}
 	return engine
 }
 
@@ -44,7 +53,7 @@ func (s *SqlEngine) Init(driver, dataSrcName, sqlDir, typ string) error {
 	if err != nil {
 		return err
 	}
-
+	s.sessionFactory = NewSessionFactory(s.db)
 	err = s.initSql(sqlDir)
 
 	return err
@@ -109,6 +118,12 @@ func (s *SqlEngine) Query(key string, data interface{}) ([]map[string]string, er
 	return m, nil
 }
 
+/// 获取session
+func (s *SqlEngine) NewSession() *Session {
+	s.checkInit()
+	return s.sessionFactory.NewSession()
+}
+
 /// 关闭预编译语句
 func (s *SqlEngine) closeStmt(stmt *sql.Stmt) {
 	if stmt != nil {
@@ -129,17 +144,40 @@ func (s *SqlEngine) closeRows(rows *sql.Rows) {
 	}
 }
 
-/// 根据sql的id（namespae+sqlId）构建sql
-/// key=namespace+"_"+sqlid
-/// data 传入本条sql的数据，使用text/template来构建sql
+/// 构建sql语句
 func (s *SqlEngine) buildSql(key string, data interface{}) (string, error) {
 	s.checkInit()
-
-	val := s.sqlMap[key]
-	if val == "" {
+	content := SqlMap[key]
+	if content == "" {
 		return "", errors.New("未匹配到映射：" + key)
 	}
-	return s.sqlBuilder.BuildSql(key, val, s.tplType, data)
+
+	tpl, err := s.getAndSetTemplate(key, content, s.tplType)
+	if err != nil {
+		return "", err
+	}
+	bts := &bytes.Buffer{}
+	err = tpl.Execute(bts, data)
+	val := bts.String()
+	val = strings.TrimSpace(val)
+	val = reg.ReplaceAllString(val, " ")
+	return val, err
+}
+
+/// 获取和设置模板
+func (s *SqlEngine) getAndSetTemplate(key, content, typ string) (*Template, error) {
+	tpl := TplMap[key]
+	var err error
+	if tpl == nil {
+		tpl, err = NewTemplate(key, content, typ)
+		if err != nil {
+			return nil, err
+		}
+		s.lock.Lock()
+		TplMap[key] = tpl
+		s.lock.Unlock()
+	}
+	return tpl, nil
 }
 
 /// 将返回结果转换为map[string][string]
@@ -193,17 +231,61 @@ func (s *SqlEngine) initSqlMap(file string) error {
 		return err
 	}
 
-	m, err := s.xmlParser.Parse(bts)
+	m, err := s.parse(bts)
 	if err != nil {
 		return err
 	}
 	if m != nil && len(m) > 0 {
 		for k, v := range m {
-			s.sqlMap[k] = v
+			SqlMap[k] = v
 		}
 	}
 
 	return nil
+}
+
+/// 解析xml文件处理成sql语句
+func (s *SqlEngine) parse(xml []byte) (map[string]string, error) {
+	ret := map[string]string{}
+
+	doc := etree.NewDocument()
+	err := doc.ReadFromBytes(xml)
+	if err != nil {
+		return ret, err
+	}
+
+	sm := doc.SelectElement("sqlmap")
+	if sm == nil {
+		return nil, errors.New("缺少sqlmap节点")
+	}
+
+	namespace := sm.SelectAttrValue("namespace", DefaultNamespace)
+	if namespace == "" {
+		namespace = DefaultNamespace
+	}
+
+	els := sm.SelectElements("sql")
+	if els == nil || len(els) < 1 {
+		return ret, nil
+	}
+
+	for _, e := range els {
+		id := e.SelectAttrValue("id", "")
+		if id == "" {
+			return ret, errors.New(namespace + " 中有sql语句未设置ID")
+		}
+		fullId := namespace + "_" + id
+		if ret[fullId] == fullId {
+			return ret, errors.New(namespace + " 中 " + fullId + " 重复")
+		}
+		val := e.Text()
+		val = strings.Replace(val, "\n", " ", -1)
+		val = strings.Trim(val, "\n")
+		val = strings.TrimSpace(val)
+		ret[fullId] = val
+	}
+
+	return ret, nil
 }
 
 /// 检测引擎是否初始化
@@ -212,3 +294,5 @@ func (s *SqlEngine) checkInit() {
 		panic(errors.New("未初始化引擎"))
 	}
 }
+
+

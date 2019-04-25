@@ -1,4 +1,4 @@
-package template
+package engine
 
 import (
 	"errors"
@@ -12,12 +12,12 @@ const (
 
 /// 渲染动态sql的模板
 type Template struct {
-	typ string
-	tpl *template.Template
+	typ string             // 模板类型
+	tpl *template.Template // go默认的模板引擎
 }
 
 /// 创建模板
-func New(name, content, typ string) (*Template, error) {
+func NewTemplate(name, content, typ string) (*Template, error) {
 	if typ == DEFAULT {
 		return newDefault(name, content, typ)
 	} else {

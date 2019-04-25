@@ -17,6 +17,7 @@ func main() {
 	}
 	eg.GetDB().SetMaxOpenConns(800)
 	eg.GetDB().SetMaxIdleConns(200)
+	eg.GetDB().BeginTx()
 
 	for i := 0; i < 900; i++ {
 		go func() {
