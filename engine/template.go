@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DEFAULT = "default"
+	TplDefault = "default"
 )
 
 /// 渲染动态sql的模板
@@ -18,7 +18,7 @@ type Template struct {
 
 /// 创建模板
 func NewTemplate(name, content, typ string) (*Template, error) {
-	if typ == DEFAULT {
+	if typ == TplDefault {
 		return newDefault(name, content, typ)
 	} else {
 		return nil, errors.New("不支持的模板类型：[" + typ + "]")
@@ -41,7 +41,7 @@ func newDefault(name, content, typ string) (*Template, error) {
 
 /// 执行模板渲染
 func (t *Template) Execute(wr io.Writer, data interface{}) error {
-	if t.typ == DEFAULT {
+	if t.typ == TplDefault {
 		return t.tpl.Execute(wr, data)
 	} else {
 		return errors.New("不支持的模板类型")

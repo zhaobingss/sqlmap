@@ -4,21 +4,18 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/zhaobingss/sqlmap/engine"
-	"github.com/zhaobingss/sqlmap/template"
 	"time"
 )
 
 func main() {
 
 	eg := engine.New()
-	err := eg.Init("mysql", "root:root@(127.0.0.1:3306)/test", "sql", template.DEFAULT)
+	err := eg.Init("mysql", "root:root@(127.0.0.1:3306)/test", "sql", engine.TplDefault)
 	if err != nil {
 		panic(err)
 	}
-	eg.GetDB().SetMaxOpenConns(800)
+	eg.GetDB().SetMaxOpenConns(200)
 	eg.GetDB().SetMaxIdleConns(200)
-	eg.GetDB().BeginTx()
-
 	for i := 0; i < 900; i++ {
 		go func() {
 			mp := map[string]interface{}{}
@@ -30,7 +27,5 @@ func main() {
 			fmt.Println(m)
 		}()
 	}
-
-
 	time.Sleep(time.Duration(300) * time.Second)
 }
