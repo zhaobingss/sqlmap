@@ -17,10 +17,9 @@ func newSessionFactory(db *sql.DB) *sessionFactory {
 }
 
 /// 使用session工厂创建session
-func (s *sessionFactory) newSession(tplType string) *Session {
+func (s *sessionFactory) newSession() *Session {
 	ss := &Session{}
 	ss.db = s.db
-	ss.tplType = tplType
 	return ss
 }
 
@@ -90,17 +89,17 @@ func (s *Session) Commit() error {
 /// 非查询语句
 func (s *Session) Exec(key string, data interface{}) (sql.Result, error) {
 	if s.tx == nil {
-		return exec(key, s.tplType, data, s.db.Exec)
+		return exec(key, data, s.db.Exec)
 	} else {
-		return exec(key, s.tplType, data, s.tx.Exec)
+		return exec(key, data, s.tx.Exec)
 	}
 }
 
 /// 查询语句
 func (s *Session) Query(key string, data interface{}) ([]map[string]string, error) {
 	if s.tx == nil {
-		return query(key, s.tplType, data, s.db.Prepare)
+		return query(key, data, s.db.Prepare)
 	} else {
-		return query(key, s.tplType, data, s.tx.Prepare)
+		return query(key, data, s.tx.Prepare)
 	}
 }

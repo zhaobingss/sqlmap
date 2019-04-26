@@ -15,10 +15,10 @@ type SqlEngine struct {
 	lock           sync.RWMutex
 	db             *sql.DB
 	init           bool
-	tplType        string
 	sessionFactory *sessionFactory
 }
 
+/// 新建SqlEngine
 func New() *SqlEngine {
 	engine := &SqlEngine{}
 	return engine
@@ -31,7 +31,7 @@ func (s *SqlEngine) GetDB() *sql.DB {
 }
 
 /// 初始化sql引擎
-func (s *SqlEngine) Init(driver, dataSrcName, sqlDir, typ string) error {
+func (s *SqlEngine) Init(driver, dataSrcName, sqlDir string) error {
 	defer func() {
 		s.init = true
 	}()
@@ -40,32 +40,33 @@ func (s *SqlEngine) Init(driver, dataSrcName, sqlDir, typ string) error {
 	if err != nil {
 		return err
 	}
-	s.tplType = typ
-	if typ == "" {
-		s.tplType = TplDefault
-	}
 	s.sessionFactory = newSessionFactory(s.db)
 	err = s.initSql(sqlDir)
-
+	tplBuilder = &DefaultTemplate{}
 	return err
 }
 
 /// 执行非SELECT的sql
 func (s *SqlEngine) Execute(key string, data interface{}) (sql.Result, error) {
 	s.checkInit()
-	return exec(key, s.tplType, data, s.db.Exec)
+	return exec(key, data, s.db.Exec)
 }
 
 /// 执行SELECT的sql
 func (s *SqlEngine) Query(key string, data interface{}) ([]map[string]string, error) {
 	s.checkInit()
-	return query(key, s.tplType, data, s.db.Prepare)
+	return query(key, data, s.db.Prepare)
 }
 
 /// 获取session
 func (s *SqlEngine) NewSession() *Session {
 	s.checkInit()
-	return s.sessionFactory.newSession(s.tplType)
+	return s.sessionFactory.newSession()
+}
+
+/// 注册sql模板构建器
+func (s *SqlEngine) RegisterTemplate(tb TemplateBuilder) {
+	tplBuilder = tb
 }
 
 /// 初始化sql语句到内存

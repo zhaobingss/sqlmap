@@ -15,11 +15,13 @@ var DefaultNamespace = "default_namespace"
 /// 存储sql预处理语句
 var SqlMap = map[string]string{}
 /// 存储sql处理模板
-var TplMap = map[string]*Template{}
+var TplMap = map[string]Template{}
 /// 处理sql多余空格的正则
 var reg, _ = regexp.Compile("\\s+")
 /// 锁
 var lock = sync.RWMutex{}
+/// 模板构建器
+var tplBuilder TemplateBuilder
 
 /// 将sql.Rows 转换成 []map[string]string
 func convertRows2SliceMapString(rows *sql.Rows) ([]map[string]string, error) {
@@ -107,13 +109,13 @@ func convertMapString(rows [][]interface{}, cols []string) []map[string]string {
 }
 
 /// 构建sql语句
-func buildSql(key, typ string, data interface{}) (string, error) {
+func buildSql(key string, data interface{}) (string, error) {
 	content := SqlMap[key]
 	if content == "" {
 		return "", errors.New("未匹配到映射：" + key)
 	}
 
-	tpl, err := getAndSetTemplate(key, content, typ)
+	tpl, err := getAndSetTemplate(key, content)
 	if err != nil {
 		return "", err
 	}
@@ -126,11 +128,11 @@ func buildSql(key, typ string, data interface{}) (string, error) {
 }
 
 /// 获取和设置模板
-func getAndSetTemplate(key, content, typ string) (*Template, error) {
+func getAndSetTemplate(key, content string) (Template, error) {
 	tpl := TplMap[key]
 	var err error
 	if tpl == nil {
-		tpl, err = NewTemplate(key, content, typ)
+		tpl ,err = tplBuilder.New(key, content)
 		if err != nil {
 			return nil, err
 		}
@@ -142,8 +144,8 @@ func getAndSetTemplate(key, content, typ string) (*Template, error) {
 }
 
 /// 查询sql
-func query(key, tplType string, data interface{}, f func(string) (*sql.Stmt, error)) ([]map[string]string, error) {
-	sqlStr, err := buildSql(key, tplType, data)
+func query(key string, data interface{}, f func(string) (*sql.Stmt, error)) ([]map[string]string, error) {
+	sqlStr, err := buildSql(key, data)
 	if err != nil {
 		return nil, err
 	}
@@ -170,9 +172,9 @@ func query(key, tplType string, data interface{}, f func(string) (*sql.Stmt, err
 }
 
 /// 非查询sql
-func exec(key, tplType string, data interface{}, f func(string, ...interface{}) (sql.Result, error)) (sql.Result, error) {
+func exec(key string, data interface{}, f func(string, ...interface{}) (sql.Result, error)) (sql.Result, error) {
 
-	sqlStr, err := buildSql(key, tplType, data)
+	sqlStr, err := buildSql(key, data)
 	if err != nil {
 		return nil, err
 	}

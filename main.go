@@ -10,22 +10,22 @@ import (
 func main() {
 
 	eg := engine.New()
-	err := eg.Init("mysql", "root:root@(127.0.0.1:3306)/test", "sql", engine.TplDefault)
+	err := eg.Init("mysql", "root:root@(127.0.0.1:3306)/test", "sql")
 	if err != nil {
 		panic(err)
 	}
 	eg.GetDB().SetMaxOpenConns(200)
 	eg.GetDB().SetMaxIdleConns(200)
 	for i := 0; i < 900; i++ {
-		go func() {
+		go func(i int) {
 			mp := map[string]interface{}{}
 			mp["id"] = 2
 			m, err := eg.Query("my.selectALL", mp)
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println(m)
-		}()
+			fmt.Println(i, m)
+		}(i)
 	}
 
 	//ss := eg.NewSession()

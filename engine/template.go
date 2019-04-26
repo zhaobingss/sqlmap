@@ -1,49 +1,41 @@
 package engine
 
 import (
-	"errors"
 	"io"
 	"text/template"
 )
 
-const (
-	TplDefault = "default"
-)
-
-/// 渲染动态sql的模板
-type Template struct {
-	typ string             // 模板类型
-	tpl *template.Template // go默认的模板引擎
+/// 模板构建器
+type TemplateBuilder interface {
+	New(string, string) (Template, error)
 }
 
-/// 创建模板
-func NewTemplate(name, content, typ string) (*Template, error) {
-	if typ == TplDefault {
-		return newDefault(name, content, typ)
-	} else {
-		return nil, errors.New("不支持的模板类型：[" + typ + "]")
-	}
+/// 模板执行器
+type TemplateExecutor interface {
+	Execute(io.Writer, interface{}) error
 }
 
-/// go使用go的模板引擎
-func newDefault(name, content, typ string) (*Template, error) {
+/// 模板聚合
+type Template interface {
+	TemplateBuilder
+	TemplateExecutor
+}
+
+/// 默认的模板
+type DefaultTemplate struct {
+	tpl *template.Template
+}
+
+func (dt *DefaultTemplate) New(name, content string) (Template, error) {
 	tpl := template.New(name)
 	tpl, err := tpl.Parse(content)
 	if err != nil {
 		return nil, err
 	}
-
-	t := &Template{}
-	t.typ = typ
-	t.tpl = tpl
-	return t, nil
+	dt.tpl = tpl
+	return dt, nil
 }
 
-/// 执行模板渲染
-func (t *Template) Execute(wr io.Writer, data interface{}) error {
-	if t.typ == TplDefault {
-		return t.tpl.Execute(wr, data)
-	} else {
-		return errors.New("不支持的模板类型")
-	}
+func (dt *DefaultTemplate) Execute(wr io.Writer, param interface{}) error {
+	return dt.tpl.Execute(wr, param)
 }
