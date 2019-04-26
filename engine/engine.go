@@ -53,7 +53,7 @@ func (s *SqlEngine) Execute(key string, param interface{}) (sql.Result, error) {
 /// 执行SELECT的sql
 func (s *SqlEngine) Query(key string, param interface{}) ([]map[string]string, error) {
 	s.checkInit()
-	return query(key, param, s.db.Prepare)
+	return query(key,param,s.db.Query)
 }
 
 /// 获取session

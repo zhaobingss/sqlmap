@@ -107,8 +107,8 @@ func (s *Session) Query(key string, data interface{}) ([]map[string]string, erro
 		return nil, initError
 	}
 	if s.tx == nil {
-		return query(key, data, s.db.Prepare)
+		return query(key, data, s.db.Query)
 	} else {
-		return query(key, data, s.tx.Prepare)
+		return query(key, data, s.tx.Query)
 	}
 }

@@ -144,7 +144,7 @@ func getAndSetTemplate(key string, mapper *SqlTemplate) (Template, error) {
 }
 
 /// 查询sql
-func query(key string, param interface{}, f func(string) (*sql.Stmt, error)) ([]map[string]string, error) {
+func query(key string, param interface{}, f func(string,...interface{}) (*sql.Rows, error)) ([]map[string]string, error) {
 	sqlStr, err := buildSql(key, param)
 	if err != nil {
 		return nil, err
@@ -152,13 +152,7 @@ func query(key string, param interface{}, f func(string) (*sql.Stmt, error)) ([]
 
 	fmt.Println(sqlStr)
 
-	stmt, err := f(sqlStr)
-	defer closeStmt(stmt)
-	if err != nil {
-		return nil, err
-	}
-	rows, err := stmt.Query()
-	defer closeRows(rows)
+	rows, err := f(sqlStr)
 	if err != nil {
 		return nil, err
 	}
@@ -186,24 +180,4 @@ func exec(key string, param interface{}, f func(string, ...interface{}) (sql.Res
 	}
 	return result, nil
 
-}
-
-/// 关闭预编译语句
-func closeStmt(stmt *sql.Stmt) {
-	if stmt != nil {
-		err := stmt.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-}
-
-/// 关闭rows释放连接
-func closeRows(rows *sql.Rows) {
-	if rows != nil {
-		err := rows.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
 }

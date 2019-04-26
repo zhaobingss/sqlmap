@@ -18,4 +18,26 @@
         {{if .pass}} '{{.pass}}' {{end}}
         )
     </sql>
+    <sql id="SelectPolicyKeyList">
+        SELECT
+        DISTINCT
+        cid,
+        vendor,
+        trip_type
+        FROM
+        t_policy
+        WHERE
+        is_valid=1
+    </sql>
+    <sql id="SelectPolicyList">
+        SELECT
+        *
+        FROM
+        t_policy
+        WHERE
+        is_valid=1
+        AND cid='{{.cid}}'
+        AND vendor='{{.vendor}}'
+        AND trip_type='{{.trip_type}}'
+    </sql>
 </sqlmap>

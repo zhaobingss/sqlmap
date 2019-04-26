@@ -10,23 +10,30 @@ import (
 func main() {
 
 	eg := engine.New()
-	err := eg.Init("mysql", "root:root@(127.0.0.1:3306)/test", "sql")
+	//err := eg.Init("mysql", "root:root@(127.0.0.1:3306)/test", "sql")
+	err := eg.Init("mysql", "jipiao668:!@#jipiao@(139.196.210.136:3306)/jipiao668", "sql")
 	if err != nil {
 		panic(err)
 	}
 	eg.GetDB().SetMaxOpenConns(200)
 	eg.GetDB().SetMaxIdleConns(200)
-	for i := 0; i < 900; i++ {
-		go func(i int) {
-			mp := map[string]interface{}{}
-			mp["id"] = 2
-			m, err := eg.Query("my.selectALL", mp)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println(i, m)
-		}(i)
-	}
+
+
+	//for i := 0; i < 900; i++ {
+	//	go func(i int) {
+	//		mp := map[string]interface{}{}
+	//		mp["id"] = 2
+	//		m, err := eg.Query("my.selectALL", mp)
+	//		if err != nil {
+	//			panic(err)
+	//		}
+	//		fmt.Println(i, m)
+	//	}(i)
+	//}
+
+
+
+
 
 	//ss := eg.NewSession()
 	//err = ss.BeginTx()
@@ -57,6 +64,39 @@ func main() {
 	//	panic(err)
 	//}
 
+	InitPolicy(eg)
+
 
 	time.Sleep(time.Duration(300) * time.Second)
+}
+
+func InitPolicy(eg *engine.SqlEngine)  {
+
+	pKeys, err := eg.Query("my.SelectPolicyKeyList", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(pKeys) < 1 {
+		panic(err)
+	}
+
+	t := time.Now().UnixNano()/1000000
+	for _, v := range pKeys {
+		err := initPolicyByKey(eg, v)
+		if err != nil {
+			panic(err)
+		}
+	}
+	fmt.Println(time.Now().UnixNano()/1000000 - t)
+}
+
+func initPolicyByKey(eg *engine.SqlEngine, mapKey map[string]string) error {
+	param := map[string]interface{}{}
+	param["cid"] = mapKey["cid"]
+	param["vendor"] = mapKey["vendor"]
+	param["trip_type"] = mapKey["trip_type"]
+	_, err := eg.Query("my.SelectPolicyList", param)
+
+	return err
 }
