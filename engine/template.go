@@ -34,8 +34,10 @@ func (dt *DefaultTemplate) New(name, content string) (Template, error) {
 	if err != nil {
 		return nil, err
 	}
-	dt.tpl = tpl
-	return dt, nil
+	dtp := &DefaultTemplate{
+		tpl:tpl,
+	}
+	return dtp, nil
 }
 
 func (dt *DefaultTemplate) Execute(wr io.Writer, param interface{}) error {
