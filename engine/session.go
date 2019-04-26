@@ -1,39 +1,36 @@
 package engine
 
-import "database/sql"
+import (
+	"database/sql"
+	"errors"
+)
 
 const commitInitStatus = 1
 
-/// session工厂用来创建session
-type sessionFactory struct {
-	db *sql.DB // 数据库连接
-}
+var initError = errors.New("not init correctly")
 
-/// 创建新的session工厂
-func newSessionFactory(db *sql.DB) *sessionFactory {
-	s := &sessionFactory{}
-	s.db = db
-	return s
-}
-
-/// 使用session工厂创建session
-func (s *sessionFactory) newSession() *Session {
-	ss := &Session{}
-	ss.db = s.db
-	return ss
-}
-
-/// session回话，管理事务
+/// session会话，管理事务
 type Session struct {
 	db          *sql.DB // 数据库连接
 	tx          *sql.Tx // 事务
 	commit      int8    // 本session提交的次数
 	canRollback bool    // 标记是否可以回滚
-	tplType     string  // 模板leixing
+	init        bool    // 是否初始化
+}
+
+/// 创建session
+func newSession(db *sql.DB) *Session {
+	return &Session{
+		db:   db,
+		init: true,
+	}
 }
 
 /// 开始事务
 func (s *Session) BeginTx() error {
+	if !s.init {
+		return initError
+	}
 	s.canRollback = true
 	if s.tx != nil {
 		s.commit++
@@ -52,6 +49,9 @@ func (s *Session) BeginTx() error {
 
 /// 回滚事务
 func (s *Session) Rollback() error {
+	if !s.init {
+		return initError
+	}
 	if s.tx == nil || !s.canRollback {
 		return nil
 	}
@@ -67,6 +67,9 @@ func (s *Session) Rollback() error {
 
 /// 提交事务
 func (s *Session) Commit() error {
+	if !s.init {
+		return initError
+	}
 	s.canRollback = false
 	if s.tx == nil {
 		return nil
@@ -88,6 +91,9 @@ func (s *Session) Commit() error {
 
 /// 非查询语句
 func (s *Session) Exec(key string, data interface{}) (sql.Result, error) {
+	if !s.init {
+		return nil, initError
+	}
 	if s.tx == nil {
 		return exec(key, data, s.db.Exec)
 	} else {
@@ -97,6 +103,9 @@ func (s *Session) Exec(key string, data interface{}) (sql.Result, error) {
 
 /// 查询语句
 func (s *Session) Query(key string, data interface{}) ([]map[string]string, error) {
+	if !s.init {
+		return nil, initError
+	}
 	if s.tx == nil {
 		return query(key, data, s.db.Prepare)
 	} else {

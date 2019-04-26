@@ -7,11 +7,13 @@ import (
 
 /// 模板构建器
 type TemplateBuilder interface {
+	/// 1、模板的名字 2、模板的内容
 	New(string, string) (Template, error)
 }
 
 /// 模板执行器
 type TemplateExecutor interface {
+	/// 1、解析内容的容器 2、传入模板的参数
 	Execute(io.Writer, interface{}) error
 }
 

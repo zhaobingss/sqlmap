@@ -12,10 +12,9 @@ import (
 
 /// sql引擎
 type SqlEngine struct {
-	lock           sync.RWMutex
-	db             *sql.DB
-	init           bool
-	sessionFactory *sessionFactory
+	lock sync.RWMutex
+	db   *sql.DB
+	init bool
 }
 
 /// 新建SqlEngine
@@ -40,28 +39,27 @@ func (s *SqlEngine) Init(driver, dataSrcName, sqlDir string) error {
 	if err != nil {
 		return err
 	}
-	s.sessionFactory = newSessionFactory(s.db)
 	err = s.initSql(sqlDir)
 	tplBuilder = &DefaultTemplate{}
 	return err
 }
 
 /// 执行非SELECT的sql
-func (s *SqlEngine) Execute(key string, data interface{}) (sql.Result, error) {
+func (s *SqlEngine) Execute(key string, param interface{}) (sql.Result, error) {
 	s.checkInit()
-	return exec(key, data, s.db.Exec)
+	return exec(key, param, s.db.Exec)
 }
 
 /// 执行SELECT的sql
-func (s *SqlEngine) Query(key string, data interface{}) ([]map[string]string, error) {
+func (s *SqlEngine) Query(key string, param interface{}) ([]map[string]string, error) {
 	s.checkInit()
-	return query(key, data, s.db.Prepare)
+	return query(key, param, s.db.Prepare)
 }
 
 /// 获取session
 func (s *SqlEngine) NewSession() *Session {
 	s.checkInit()
-	return s.sessionFactory.newSession()
+	return newSession(s.db)
 }
 
 /// 注册sql模板构建器
@@ -100,10 +98,10 @@ func (s *SqlEngine) initSqlMap(file string) error {
 	if m != nil && len(m) > 0 {
 		for k, v := range m {
 			vv := SqlMap[k]
-			if vv != "" {
+			if vv != nil {
 				return errors.New("映射KEY重复：" + k)
 			} else {
-				SqlMap[k] = v
+				SqlMap[k] = &SqlTemplate{sql: v}
 			}
 		}
 	}

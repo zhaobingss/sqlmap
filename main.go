@@ -36,7 +36,7 @@ func main() {
 	//mp := map[string]interface{}{}
 	//mp["name"] = "zhangsan"
 	//mp["pass"] = "123"
-	//r, err := ss.Exec("my_insert", mp)
+	//r, err := ss.Exec("my.insert", mp)
 	//if err != nil {
 	//	panic(err)
 	//}
@@ -44,12 +44,14 @@ func main() {
 	//id, _ := r.LastInsertId()
 	//fmt.Println(id)
 	//
+	//time.Sleep(time.Duration(10) * time.Second)
+	//
 	//err = ss.Commit()
 	//if err != nil {
 	//	panic(err)
 	//}
-	//time.Sleep(time.Duration(10) * time.Second)
-	//
+
+
 	//err = ss.Rollback()
 	//if err != nil {
 	//	panic(err)
