@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/beevik/etree"
+	"github.com/zhaobingss/sqlmap/log"
 	"github.com/zhaobingss/sqlmap/util"
 	"io/ioutil"
 	"strings"
@@ -53,7 +54,7 @@ func (s *SqlEngine) Execute(key string, param interface{}) (sql.Result, error) {
 /// 执行SELECT的sql
 func (s *SqlEngine) Query(key string, param interface{}) ([]map[string]string, error) {
 	s.checkInit()
-	return query(key,param,s.db.Query)
+	return query(key, param, s.db.Query)
 }
 
 /// 获取session
@@ -65,6 +66,11 @@ func (s *SqlEngine) NewSession() *Session {
 /// 注册sql模板构建器
 func (s *SqlEngine) RegisterTemplate(tb TemplateBuilder) {
 	tplBuilder = tb
+}
+
+/// 注册日志函数
+func (s *SqlEngine) RegisterLogFunc(err, inf func(f interface{}, v ...interface{})) {
+	log.RegisterLogFunc(err, inf)
 }
 
 /// 初始化sql语句到内存

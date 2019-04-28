@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
-	"fmt"
+	"github.com/zhaobingss/sqlmap/log"
 	"regexp"
 	"strings"
 )
@@ -22,6 +22,15 @@ var tplBuilder TemplateBuilder
 type SqlTemplate struct {
 	sql string   // sql内容
 	tpl Template // 处理模板
+}
+
+type Param struct {
+	Key string
+	Val string
+}
+
+func NewParam(k, v string) *Param {
+	return &Param{Key: k, Val: v,}
 }
 
 /// 将sql.Rows 转换成 []map[string]string
@@ -144,13 +153,12 @@ func getAndSetTemplate(key string, mapper *SqlTemplate) (Template, error) {
 }
 
 /// 查询sql
-func query(key string, param interface{}, f func(string,...interface{}) (*sql.Rows, error)) ([]map[string]string, error) {
+func query(key string, param interface{}, f func(string, ...interface{}) (*sql.Rows, error)) ([]map[string]string, error) {
 	sqlStr, err := buildSql(key, param)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(sqlStr)
+	log.Info(sqlStr)
 
 	rows, err := f(sqlStr)
 	if err != nil {
@@ -172,7 +180,7 @@ func exec(key string, param interface{}, f func(string, ...interface{}) (sql.Res
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(sqlStr)
+	log.Info(sqlStr)
 
 	result, err := f(sqlStr)
 	if err != nil {
