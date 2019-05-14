@@ -31,10 +31,6 @@ func main() {
 	//	}(i)
 	//}
 
-
-
-
-
 	//ss := eg.NewSession()
 	//err = ss.BeginTx()
 	//if err != nil {
@@ -58,11 +54,21 @@ func main() {
 	//	panic(err)
 	//}
 
-
 	//err = ss.Rollback()
 	//if err != nil {
 	//	panic(err)
 	//}
+
+	//type Int int
+	//var i Int
+	//i = 5
+	//
+	//e := reflect.ValueOf(&i).Elem()
+	//
+	////name := (&e).Type().Name()
+	//name := (&e).Elem().String()
+	//fmt.Println(name)
+
 
 	InitPolicy(eg)
 
