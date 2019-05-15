@@ -158,7 +158,10 @@ func query(key string, param interface{}, f func(string, ...interface{}) (*sql.R
 	if err != nil {
 		return nil, err
 	}
-	log.Info(sqlStr)
+
+	if log.Info != nil {
+		log.Info(sqlStr)
+	}
 
 	rows, err := f(sqlStr)
 	if err != nil {
@@ -180,7 +183,10 @@ func exec(key string, param interface{}, f func(string, ...interface{}) (sql.Res
 	if err != nil {
 		return nil, err
 	}
-	log.Info(sqlStr)
+
+	if log.Info != nil {
+		log.Info(sqlStr)
+	}
 
 	result, err := f(sqlStr)
 	if err != nil {
