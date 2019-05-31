@@ -18,7 +18,6 @@ func main() {
 	eg.GetDB().SetMaxOpenConns(200)
 	eg.GetDB().SetMaxIdleConns(200)
 
-
 	//for i := 0; i < 900; i++ {
 	//	go func(i int) {
 	//		mp := map[string]interface{}{}
