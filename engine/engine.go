@@ -11,27 +11,43 @@ import (
 	"sync"
 )
 
-/// sql引擎
+/// the SqlEngine
 type SqlEngine struct {
 	lock sync.RWMutex
 	db   *sql.DB
 	init bool
 }
 
-/// 新建SqlEngine
+/// create a new engine without init
 func New() *SqlEngine {
 	engine := &SqlEngine{}
 	return engine
 }
 
-/// 获取database/sql.DB
+/// create a new engine with init
+/// @param driver: db drive name, eg: mysql,sqlite
+/// @param dataSrcName: eg: root:root@(127.0.0.1:3306)/test
+/// @param sqlDir: the sql.goxml files dir
+func NewEngine(driver, dataSrcName, sqlDir string) (*SqlEngine, error) {
+	engine := New()
+	err := engine.Init(driver, dataSrcName, sqlDir)
+	return engine, err
+}
+
+/// get the database/sql.DB
 func (s *SqlEngine) GetDB() *sql.DB {
 	s.checkInit()
 	return s.db
 }
 
-/// 初始化sql引擎
+/// init the sql engine
+/// @param driver: db drive name, eg: mysql,sqlite
+/// @param dataSrcName: eg: root:root@(127.0.0.1:3306)/test
+/// @param sqlDir: the sql.goxml files dir
 func (s *SqlEngine) Init(driver, dataSrcName, sqlDir string) error {
+	if s.init {
+		return errors.New("the engine is already init")
+	}
 	defer func() {
 		s.init = true
 	}()
@@ -45,37 +61,66 @@ func (s *SqlEngine) Init(driver, dataSrcName, sqlDir string) error {
 	return err
 }
 
-/// 执行非SELECT的sql
+/// execute the sql with a can ignore result
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
 func (s *SqlEngine) Execute(key string, param interface{}) (sql.Result, error) {
 	s.checkInit()
 	return exec(key, param, s.db.Exec)
 }
 
-/// 执行SELECT的sql
+/// execute the sql and set result to []map[string]string
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
 func (s *SqlEngine) Query(key string, param interface{}) ([]map[string]string, error) {
 	s.checkInit()
 	return query(key, param, s.db.Query)
 }
 
-/// 获取session
+/// execute sql and set the result to a slice dest
+/// @param the result will be set to dest, and the dest must be like eg: *[]*struct or *[]struct
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
+func (s *SqlEngine) Select(dest interface{}, key string, param interface{}) error {
+	s.checkInit()
+	return selectRows(dest, key, param, s.db.Query)
+}
+
+/// execute sql and set the result to a struct dest
+/// @param the result will be set to dest, and the dest must be like eg: *struct
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
+/// @return error: ERR_NOT_GOT_RECORD,ERR_MORE_THAN_ONE_RECORD,...
+/// ERR_NOT_GOT_RECORD indicate that not got any recode from the database
+/// ERR_MORE_THAN_ONE_RECORD indicate that got more than one record from database
+func (s *SqlEngine) SelectOne(dest interface{}, key string, param interface{}) error {
+	s.checkInit()
+	return selectRow(dest, key, param, s.db.Query)
+}
+
+/// get a session use for transaction
 func (s *SqlEngine) NewSession() *Session {
 	s.checkInit()
 	return newSession(s.db)
 }
 
-/// 注册sql模板构建器
+/// register a sql template to replace the default, default use go text/template
+/// @param tb: the template builder
 func (s *SqlEngine) RegisterTemplate(tb TemplateBuilder) {
 	tplBuilder = tb
 }
 
-/// 注册日志函数
+/// register the log func
+/// @param err: the error log func
+/// @param inf: the info log func
 func (s *SqlEngine) RegisterLogFunc(err, inf func(f interface{}, v ...interface{})) {
 	log.RegisterLogFunc(err, inf)
 }
 
-/// 初始化sql语句到内存
+/// init the *.goxml files to map
+/// @param sqlDir: the *.goxml file location
 func (s *SqlEngine) initSql(sqlDir string) error {
-	files, err := util.GetAllFiles(sqlDir)
+	files, err := util.GetFiles(sqlDir)
 	if err != nil {
 		return err
 	}
@@ -90,7 +135,8 @@ func (s *SqlEngine) initSql(sqlDir string) error {
 	return nil
 }
 
-/// 初始化sql映射
+/// load the *goxml file content to map
+/// @param file: the *.goxml file path
 func (s *SqlEngine) initSqlMap(file string) error {
 	bts, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -105,7 +151,7 @@ func (s *SqlEngine) initSqlMap(file string) error {
 		for k, v := range m {
 			vv := SqlMap[k]
 			if vv != nil {
-				return errors.New("映射KEY重复：" + k)
+				return errors.New("the *.goxml map key is repeat: " + k)
 			} else {
 				SqlMap[k] = &SqlTemplate{sql: v}
 			}
@@ -115,7 +161,7 @@ func (s *SqlEngine) initSqlMap(file string) error {
 	return nil
 }
 
-/// 解析xml文件处理成sql语句
+/// parse the *.goxml file
 func (s *SqlEngine) parse(xml []byte) (map[string]string, error) {
 	ret := map[string]string{}
 
@@ -159,9 +205,9 @@ func (s *SqlEngine) parse(xml []byte) (map[string]string, error) {
 	return ret, nil
 }
 
-/// 检测引擎是否初始化
+/// check if the engine is init
 func (s *SqlEngine) checkInit() {
 	if !s.init {
-		panic(errors.New("未初始化引擎"))
+		panic(errors.New("the engine is not initial"))
 	}
 }

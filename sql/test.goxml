@@ -1,43 +1,8 @@
 <sqlmap namespace="my">
     <sql id="selectALL">
-        {{$where := false}}
-        SELECT
-        *
-        FROM sys_src
-        WHERE
-        {{if .id}} id = {{.id }} {{$where = true}} {{end}}
-        {{if eq $where false}} 1=1 {{end}}
-        LIMIT 10
+        SELECT * FROM sys_src
     </sql>
-    <sql id="insert">
-        INSERT INTO sys_user(
-        {{if .name}} user_name, {{end}}
-        {{if .pass}} user_pass {{end}}
-        ) VALUES(
-        {{if .name}} '{{.name}}', {{end}}
-        {{if .pass}} '{{.pass}}' {{end}}
-        )
-    </sql>
-    <sql id="SelectPolicyKeyList">
-        SELECT
-        DISTINCT
-        cid,
-        vendor,
-        trip_type
-        FROM
-        t_policy
-        WHERE
-        is_valid=1
-    </sql>
-    <sql id="SelectPolicyList">
-        SELECT
-        *
-        FROM
-        t_policy
-        WHERE
-        is_valid=1
-        AND cid='{{.cid}}'
-        AND vendor='{{.vendor}}'
-        AND trip_type='{{.trip_type}}'
+    <sql id="selectOne">
+        SELECT * FROM sys_src WHERE id = 1
     </sql>
 </sqlmap>

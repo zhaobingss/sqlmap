@@ -5,8 +5,9 @@ import (
 	"os"
 )
 
-/// 递归获取某个文件夹下面的所有的文件
-func GetAllFiles(dirPth string) (files []string, err error) {
+/// get all files from the dirPath
+/// @param dirPath: the files dir
+func GetFiles(dirPth string) (files []string, err error) {
 	var dirs []string
 	dir, err := ioutil.ReadDir(dirPth)
 	if err != nil {
@@ -15,9 +16,9 @@ func GetAllFiles(dirPth string) (files []string, err error) {
 
 	PthSep := string(os.PathSeparator)
 	for _, fi := range dir {
-		if fi.IsDir() { // 目录, 递归遍历
+		if fi.IsDir() {
 			dirs = append(dirs, dirPth+PthSep+fi.Name())
-			fs, err := GetAllFiles(dirPth + PthSep + fi.Name())
+			fs, err := GetFiles(dirPth + PthSep + fi.Name())
 			if err != nil {
 				return nil, err
 			} else {

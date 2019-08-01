@@ -9,16 +9,17 @@ const commitInitStatus = 1
 
 var initError = errors.New("not init correctly")
 
-/// session会话，管理事务
+/// session that manage the transaction
 type Session struct {
-	db          *sql.DB // 数据库连接
-	tx          *sql.Tx // 事务
-	commit      int8    // 本session提交的次数
-	canRollback bool    // 标记是否可以回滚
-	init        bool    // 是否初始化
+	db          *sql.DB // the database/sql.DB
+	tx          *sql.Tx // transaction
+	commit      int8    // commit count
+	canRollback bool    // flag that indicate if the transaction can rollback
+	init        bool    // flag indicate if the session is already init
 }
 
-/// 创建session
+/// create a session with sql.DB
+/// @param db: sql.DB
 func newSession(db *sql.DB) *Session {
 	return &Session{
 		db:   db,
@@ -26,7 +27,7 @@ func newSession(db *sql.DB) *Session {
 	}
 }
 
-/// 开始事务
+/// begin a transaction
 func (s *Session) BeginTx() error {
 	if !s.init {
 		return initError
@@ -47,7 +48,7 @@ func (s *Session) BeginTx() error {
 	return nil
 }
 
-/// 回滚事务
+/// rollback the transaction
 func (s *Session) Rollback() error {
 	if !s.init {
 		return initError
@@ -65,7 +66,7 @@ func (s *Session) Rollback() error {
 	return nil
 }
 
-/// 提交事务
+/// commit the transaction
 func (s *Session) Commit() error {
 	if !s.init {
 		return initError
@@ -89,7 +90,9 @@ func (s *Session) Commit() error {
 	return nil
 }
 
-/// 非查询语句
+/// execute the sql with a can ignore result
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
 func (s *Session) Exec(key string, data interface{}) (sql.Result, error) {
 	if !s.init {
 		return nil, initError
@@ -101,7 +104,9 @@ func (s *Session) Exec(key string, data interface{}) (sql.Result, error) {
 	}
 }
 
-/// 查询语句
+/// execute the sql and set result to []map[string]string
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
 func (s *Session) Query(key string, data interface{}) ([]map[string]string, error) {
 	if !s.init {
 		return nil, initError
@@ -110,5 +115,38 @@ func (s *Session) Query(key string, data interface{}) ([]map[string]string, erro
 		return query(key, data, s.db.Query)
 	} else {
 		return query(key, data, s.tx.Query)
+	}
+}
+
+/// execute sql and set the result to a slice dest
+/// @param the result will be set to dest, and the dest must be like eg: *[]*struct or *[]struct
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
+func (s *Session) Select(dest interface{}, key string, param interface{}) error  {
+	if !s.init {
+		return initError
+	}
+	if s.tx == nil {
+		return selectRows(dest, key, param, s.db.Query)
+	} else {
+		return selectRows(dest, key, param, s.tx.Query)
+	}
+}
+
+/// execute sql and set the result to a struct dest
+/// @param the result will be set to dest, and the dest must be like eg: *struct
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
+/// @return error: ERR_NOT_GOT_RECORD,ERR_MORE_THAN_ONE_RECORD,...
+/// ERR_NOT_GOT_RECORD indicate that not got any recode from the database
+/// ERR_MORE_THAN_ONE_RECORD indicate that got more than one record from database
+func (s *Session) SelectOne(dest interface{}, key string, param interface{}) error  {
+	if !s.init {
+		return initError
+	}
+	if s.tx == nil {
+		return selectRow(dest, key, param, s.db.Query)
+	} else {
+		return selectRow(dest, key, param, s.tx.Query)
 	}
 }
