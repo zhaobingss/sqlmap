@@ -15,7 +15,7 @@ import (
 var DefaultNamespace = "default_namespace"
 
 /// cache sql template
-var SqlMap = map[string]*SqlTemplate{}
+var sqlMap = map[string]*SqlTemplate{}
 
 /// the regex to be use replace space char in sql
 var reg, _ = regexp.Compile("\\s+")
@@ -33,6 +33,9 @@ type SqlTemplate struct {
 }
 
 /// convert sql.Rows to []map[string]string
+/// @param rows: *sql.Rows
+/// @return []map[string]string
+/// @return error
 func convertRows2SliceMapString(rows *sql.Rows) ([]map[string]string, error) {
 	rs, cols, err := convertRows2SliceInterface(rows)
 	if err != nil {
@@ -43,6 +46,9 @@ func convertRows2SliceMapString(rows *sql.Rows) ([]map[string]string, error) {
 }
 
 /// convert sql.Rows to []map[string][]byte
+/// @param rows: *sql.Rows
+/// @return []map[string][]byte
+/// @return error
 func convertRows2SliceMapBytes(rows *sql.Rows) ([]map[string][]byte, error) {
 	rs, cols, err := convertRows2SliceInterface(rows)
 	if err != nil {
@@ -53,6 +59,9 @@ func convertRows2SliceMapBytes(rows *sql.Rows) ([]map[string][]byte, error) {
 }
 
 /// convert sql.Rows to [][]interface{}
+/// @param rows: *sql.Rows
+/// @return [][]interface{}
+/// @return error
 func convertRows2SliceInterface(rows *sql.Rows) ([][]interface{}, []string, error) {
 	cols, err := rows.Columns()
 	if err != nil {
@@ -73,6 +82,7 @@ func convertRows2SliceInterface(rows *sql.Rows) ([][]interface{}, []string, erro
 }
 
 /// make a empty row to receive data from sql.Rows
+/// @param colSize: the sql.Rows columns size
 func makeEmptyRow(colSize int) []interface{} {
 	row := make([]interface{}, colSize)
 	for i := 0; i < colSize; i++ {
@@ -118,11 +128,13 @@ func convertMapString(rows [][]interface{}, cols []string) []map[string]string {
 }
 
 /// build sql for execute
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
 func buildSql(key string, param interface{}) (string, error) {
 	if key == "" {
 		return "", errors.New("the map key must be not empty")
 	}
-	mapper := SqlMap[key]
+	mapper := sqlMap[key]
 	if mapper == nil {
 		return "", errors.New("can't match the map key: " + key)
 	}
@@ -140,6 +152,8 @@ func buildSql(key string, param interface{}) (string, error) {
 }
 
 /// get or set sql template
+/// @param key: sql map key, namespace + sql ID
+/// @param mapper: SqlTemplate that store the sql map to Template
 func getAndSetTemplate(key string, mapper *SqlTemplate) (Template, error) {
 	tpl := mapper.tpl
 	var err error
@@ -155,6 +169,11 @@ func getAndSetTemplate(key string, mapper *SqlTemplate) (Template, error) {
 }
 
 /// query and fill the result to []map[string]string
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
+/// @param f: the execute func like eg: db.Query/db.Eexcute
+/// @return []map[string]string
+/// @return error
 func query(key string, param interface{}, f func(string, ...interface{}) (*sql.Rows, error)) ([]map[string]string, error) {
 	rows, err := queryRows(key, param, f)
 	if err != nil {
@@ -168,6 +187,11 @@ func query(key string, param interface{}, f func(string, ...interface{}) (*sql.R
 }
 
 /// execute sql
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
+/// @param f: the execute func like eg: db.Query/db.Eexcute
+/// @return sql.Result
+/// @return error
 func exec(key string, param interface{}, f func(string, ...interface{}) (sql.Result, error)) (sql.Result, error) {
 	sqlStr, err := buildSql(key, param)
 	if err != nil {
@@ -182,6 +206,11 @@ func exec(key string, param interface{}, f func(string, ...interface{}) (sql.Res
 }
 
 /// query and fill the result to *[]struct or *[]*struct
+/// @param dest: the slice struct that the rows will be set eg: *[]struct or *[]*struct
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
+/// @param f: the execute func like eg: db.Query/db.Eexcute
+/// @return error
 func selectRows(dest interface{}, key string, param interface{}, f func(string, ...interface{}) (*sql.Rows, error)) error {
 	rows, err := queryRows(key, param, f)
 	if err != nil {
@@ -192,6 +221,11 @@ func selectRows(dest interface{}, key string, param interface{}, f func(string, 
 }
 
 /// fill the result to *struct
+/// @param dest: the struct that the rows will be set eg: *struct
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
+/// @param f: the execute func like eg: db.Query/db.Eexcute
+/// @return error
 func selectRow(dest interface{}, key string, param interface{}, f func(string, ...interface{}) (*sql.Rows, error)) error {
 	rows, err := queryRows(key, param, f)
 	if err != nil {
@@ -201,6 +235,11 @@ func selectRow(dest interface{}, key string, param interface{}, f func(string, .
 }
 
 /// query rows
+/// @param key: sql map key, namespace + sql ID
+/// @param param: the param to pass to the sql template
+/// @param f: the execute func like eg: db.Query/db.Eexcute
+/// @return *sql.Rows
+/// @return error
 func queryRows(key string, param interface{}, f func(string, ...interface{}) (*sql.Rows, error)) (*sql.Rows, error) {
 	sqlStr, err := buildSql(key, param)
 	if err != nil {
@@ -216,6 +255,8 @@ func queryRows(key string, param interface{}, f func(string, ...interface{}) (*s
 }
 
 /// set the result set to slice struct
+/// @param dest: the slice struct that the rows will be set eg: *[]struct or *[]*struct
+/// @param *sql.Rows
 func scanRows(dest interface{}, rows *sql.Rows) error {
 	val := reflect.ValueOf(dest)
 	err := checkScanRowsType(val.Type())
@@ -253,6 +294,8 @@ func scanRows(dest interface{}, rows *sql.Rows) error {
 }
 
 /// set the result set to struct or struct pointer
+/// @param dest: the struct that the rows will be set eg: *struct
+/// @param *sql.Rows
 func scanRow(dest interface{}, rows *sql.Rows) error {
 	val := reflect.ValueOf(dest)
 	err := checkScanRowType(val.Type())

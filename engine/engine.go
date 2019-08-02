@@ -149,11 +149,11 @@ func (s *SqlEngine) initSqlMap(file string) error {
 	}
 	if m != nil && len(m) > 0 {
 		for k, v := range m {
-			vv := SqlMap[k]
+			vv := sqlMap[k]
 			if vv != nil {
 				return errors.New("the *.goxml map key is repeat: " + k)
 			} else {
-				SqlMap[k] = &SqlTemplate{sql: v}
+				sqlMap[k] = &SqlTemplate{sql: v}
 			}
 		}
 	}
@@ -173,7 +173,7 @@ func (s *SqlEngine) parse(xml []byte) (map[string]string, error) {
 
 	sm := doc.SelectElement("sqlmap")
 	if sm == nil {
-		return nil, errors.New("缺少sqlmap节点")
+		return nil, errors.New("the sqlmap element is not found")
 	}
 
 	namespace := sm.SelectAttrValue("namespace", DefaultNamespace)
@@ -189,11 +189,11 @@ func (s *SqlEngine) parse(xml []byte) (map[string]string, error) {
 	for _, e := range els {
 		id := e.SelectAttrValue("id", "")
 		if id == "" {
-			return ret, errors.New(namespace + " 中有sql语句未设置ID")
+			return ret, errors.New(namespace + " has sql not have ID")
 		}
 		fullId := namespace + "." + id
 		if ret[fullId] == fullId {
-			return ret, errors.New(namespace + " 中 " + fullId + " 重复")
+			return ret, errors.New(namespace + "." + fullId + " repeat")
 		}
 		val := e.Text()
 		val = strings.Replace(val, "\n", " ", -1)

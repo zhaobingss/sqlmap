@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/zhaobingss/sqlmap/engine"
+	"sync"
 	"testing"
 )
 
@@ -22,6 +23,7 @@ type Resource struct {
 	UpdateTime  string         `db:"update_time"`
 }
 var eg *engine.SqlEngine
+var wg sync.WaitGroup
 func init() {
 	var err error
 	eg, err = engine.NewEngine("mysql", "root:root@(127.0.0.1:3306)/test", "E:/project/mine/go/sqlmap/sql")
@@ -60,4 +62,12 @@ func TestMap_test(t *testing.T) {
 	for _, v := range ret {
 		fmt.Println(v)
 	}
+}
+
+func TestConcurrency_test(t *testing.T)  {
+	wg.Add(1)
+	go TestSliceStruct_test(nil)
+	go TestMap_test(nil)
+	go TestStruct_test(nil)
+	wg.Wait()
 }
