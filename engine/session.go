@@ -27,6 +27,16 @@ func newSession(db *sql.DB) *Session {
 	}
 }
 
+/// init the session
+/// @param db: sql.DB
+func (s *Session) Init(db *sql.DB) {
+	if s.init {
+		return
+	}
+	s.db = db
+	s.init = true
+}
+
 /// begin a transaction
 func (s *Session) BeginTx() error {
 	if !s.init {
@@ -122,7 +132,7 @@ func (s *Session) Query(key string, data interface{}) ([]map[string]string, erro
 /// @param the result will be set to dest, and the dest must be like eg: *[]*struct or *[]struct
 /// @param key: sql map key, namespace + sql ID
 /// @param param: the param to pass to the sql template
-func (s *Session) Select(dest interface{}, key string, param interface{}) error  {
+func (s *Session) Select(dest interface{}, key string, param interface{}) error {
 	if !s.init {
 		return initError
 	}
@@ -140,7 +150,7 @@ func (s *Session) Select(dest interface{}, key string, param interface{}) error 
 /// @return error: ERR_NOT_GOT_RECORD,ERR_MORE_THAN_ONE_RECORD,...
 /// ERR_NOT_GOT_RECORD indicate that not got any recode from the database
 /// ERR_MORE_THAN_ONE_RECORD indicate that got more than one record from database
-func (s *Session) SelectOne(dest interface{}, key string, param interface{}) error  {
+func (s *Session) SelectOne(dest interface{}, key string, param interface{}) error {
 	if !s.init {
 		return initError
 	}

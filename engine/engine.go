@@ -98,6 +98,26 @@ func (s *SqlEngine) SelectOne(dest interface{}, key string, param interface{}) e
 	return selectRow(dest, key, param, s.db.Query)
 }
 
+/// start transaction with the given function f
+/// @param f：the function that the transaction code will be run
+func (s *SqlEngine) Transaction(f func(s *Session)(interface{}, error)) (interface{}, error) {
+	session := newSession(s.db)
+	err := session.BeginTx()
+	if err != nil {
+		return nil, err
+	}
+	result, err := f(session)
+	if err != nil {
+		return nil, err
+	}
+
+	err = session.Commit()
+	if err != nil {
+		return nil, err
+	}
+	return result, err
+}
+
 /// get a session use for transaction
 func (s *SqlEngine) NewSession() *Session {
 	s.checkInit()
